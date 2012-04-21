@@ -5,7 +5,6 @@
 package com.TerraNullius.entity;
 
 import com.TerraNullius.Game;
-import com.TerraNullius.entity.Weapon.WeaponType;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.collision.CollisionResult;

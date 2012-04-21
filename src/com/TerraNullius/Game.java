@@ -1,37 +1,27 @@
 package com.TerraNullius;
 
-import com.TerraNullius.GUI.StartScreen;
+import com.TerraNullius.appstates.GameState;
+import com.TerraNullius.appstates.InventoryState;
+import com.TerraNullius.appstates.MenuState;
 import com.TerraNullius.entity.*;
-import com.TerraNullius.entity.Weapon.WeaponType;
 import com.TerraNullius.physics.TNPhysicsListener;
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.control.RigidBodyControl;
-import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapText;
 import com.jme3.input.*;
 import com.jme3.input.controls.*;
-import com.jme3.light.AmbientLight;
-import com.jme3.light.DirectionalLight;
 import com.jme3.math.*;
 import com.jme3.niftygui.NiftyJmeDisplay;
-import com.jme3.post.Filter;
-import com.jme3.post.FilterPostProcessor;
-import com.jme3.post.filters.BloomFilter;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.control.CameraControl.ControlDirection;
 import com.jme3.system.AppSettings;
 import de.lessvoid.nifty.Nifty;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,13 +30,20 @@ public class Game extends SimpleApplication {
     static Game instance;
     public static AppSettings settings;
     public EntityIDMapper idMap;
-    public BulletAppState bulletAppState;
+    
     public Vector2f cursorPos;
     public long shootTimer;
     public CameraNode camNode;
     public Node playerNode;
     public Node mobs;
     boolean isRunning = false;
+    
+    //AppStates
+    public BulletAppState bulletAppState;
+    public GameState gameState;
+    public InventoryState inventoryState;
+    public MenuState menuState;
+    
     //Entities
     public Player player;
     public ArrayList<Mob> mobList = new ArrayList();
@@ -75,24 +72,23 @@ public class Game extends SimpleApplication {
     @Override
     public void simpleInitApp() {
         Logger.getLogger("").setLevel(Level.SEVERE);
-        idMap = new EntityIDMapper();
 
-        //Physics
+        //AppStates
         bulletAppState = new BulletAppState();
+        gameState = new GameState();
+        inventoryState = new InventoryState();
+        menuState = new MenuState();
         stateManager.attach(bulletAppState);
+        stateManager.attach(gameState);
+        stateManager.attach(inventoryState);
+        stateManager.attach(menuState);
+        
+        //Physics
         bulletAppState.getPhysicsSpace().setGravity(new Vector3f(0f, -1f, 0f));
         bulletAppState.getPhysicsSpace().setAccuracy(0.005f);
         TNPhysicsListener pListener = new TNPhysicsListener(bulletAppState);
-
-        //Light
-        AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(al);
-
-        DirectionalLight dl = new DirectionalLight();
-        dl.setColor(ColorRGBA.White);
-        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-        rootNode.addLight(dl);
+        
+        flyCam.setEnabled(false);
         
 //        //Ground
 //        Box b = new Box(Vector3f.ZERO, 128f, 1f, 128f);
@@ -111,46 +107,6 @@ public class Game extends SimpleApplication {
 //        ground.addControl(groundPhys);
 //        bulletAppState.getPhysicsSpace().add(groundPhys);
 //        rootNode.attachChild(ground);
-
-        assetManager.registerLocator("town.zip", ZipLocator.class.getName());
-        Spatial sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalTranslation(0, -1f, 0);
-        sceneModel.setLocalScale(1f);
-        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape((Node) sceneModel);
-        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
-        sceneModel.addControl(landscape);
-        rootNode.attachChild(sceneModel);
-        bulletAppState.getPhysicsSpace().add(landscape);
-
-        //Player
-        player = new Player(instance);
-        playerNode = new Node("PlayerNode");
-        playerNode.attachChild(player.getSpatial());
-
-        //Camera
-        flyCam.setEnabled(false);
-        camNode = new CameraNode("Camera Node", cam);
-        camNode.setControlDir(ControlDirection.SpatialToCamera);
-        camNode.setLocalTranslation(player.getPos().add(new Vector3f(-14, 14, -14)));
-        camNode.lookAt(player.getPos(), Vector3f.UNIT_Y);
-//        playerNode.attachChild(camNode);
-        rootNode.attachChild(camNode);
-        rootNode.attachChild(playerNode);
-        
-        //Filters
-        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-        Filter bloom = new BloomFilter(BloomFilter.GlowMode.Objects);        
-        fpp.addFilter(bloom);
-        viewPort.addProcessor(fpp);
-        
-        //Mobs
-        mobs = new Node("Mobs");
-        rootNode.attachChild(mobs);
-
-        createZombies(20, 30);
-
-        //Collectables
-        createTestWeaps();
 
 //        Mesh lineMesh = new Mesh();
 //        lineMesh.setMode(Mesh.Mode.Lines);
@@ -181,42 +137,10 @@ public class Game extends SimpleApplication {
         
         NiftyJmeDisplay niftyDisplay = new NiftyJmeDisplay(getAssetManager(),getInputManager(),getAudioRenderer(),getGuiViewPort());
         nifty = niftyDisplay.getNifty();
-        nifty.fromXml("Interface/GUI.xml", "StartScreen", new StartScreen());
+        nifty.fromXml("Interface/GUI.xml", "StartScreen", new MenuState());
         getGuiViewPort().addProcessor(niftyDisplay);
 
         initKeys();
-    }
-
-    //Creates new zombies of number amount a random distance less than maxDist away from the player
-    public void createZombies(int amount, int maxDist) {
-        maxDist *= 2;   //convert radius to diameter
-        Zombie zombie;
-        Random rand = new Random();
-        Vector3f offset;
-        for (int i = 0; i < amount; i++) {
-            zombie = new Zombie(instance);
-
-            offset = new Vector3f(rand.nextInt(maxDist) - maxDist / 2, 0, rand.nextInt(maxDist) - maxDist / 2);
-            zombie.setPos(player.getPos().add(offset));
-
-            mobList.add(zombie);
-        }
-    }
-
-    public void createTestWeaps() {
-        Weapon weap = new Weapon(WeaponType.HANDS, instance);
-        weap.setPos(player.getPos().add(new Vector3f(5f, 0f, 5f)));
-        entityList.add(weap);
-        Weapon weap1 = new Weapon(WeaponType.PISTOL, instance);
-        weap1.setPos(player.getPos().add(new Vector3f(-5f, 0f, 5f)));
-        entityList.add(weap1);
-        Weapon weap2 = new Weapon(WeaponType.MACHINEGUN, instance);
-        weap2.setPos(player.getPos().add(new Vector3f(-5f, 0f, -5f)));
-        entityList.add(weap2);
-        Weapon weap3 = new Weapon(WeaponType.RIFLE, instance);
-        weap3.setPos(player.getPos().add(new Vector3f(5f, 0f, -5f)));
-        entityList.add(weap3);
-
     }
 
     private void initKeys() {
@@ -285,7 +209,7 @@ public class Game extends SimpleApplication {
                 }
             }else if (name.equals("Menu")) {
                 if (isPressed) {
-                    menuToggle = true;                  
+                    menuToggle = true;
                 }
             }
         }

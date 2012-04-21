@@ -14,12 +14,15 @@ import com.jme3.bullet.BulletAppState;
 import com.jme3.input.InputManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.screen.Screen;
+import de.lessvoid.nifty.screen.ScreenController;
 
 /**
  *
  * @author Griffin
  */
-public class InventoryState extends AbstractAppState {
+public class InventoryState extends AbstractAppState implements ScreenController {
 
     private SimpleApplication app;
     private Node rootNode;
@@ -28,6 +31,8 @@ public class InventoryState extends AbstractAppState {
     private InputManager inputManager;
     private ViewPort viewPort;
     private BulletAppState bulletAppState;
+    private Nifty nifty;
+    private Screen screen;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -75,5 +80,16 @@ public class InventoryState extends AbstractAppState {
         } else {
             // do the following while game is PAUSED, e.g. play an idle animation.    
         }
-    }    
+    }
+
+    public void bind(Nifty nifty, Screen screen) {
+        this.nifty = nifty;
+        this.screen = screen;
+    }
+
+    public void onStartScreen() {
+    }
+
+    public void onEndScreen() {
+    }
 }

@@ -5,15 +5,12 @@
 package com.TerraNullius.entity;
 
 import com.TerraNullius.Game;
-import com.TerraNullius.entity.Weapon.WeaponType;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.shape.Box;
 
 /**
  *
