@@ -35,6 +35,7 @@ just singleplayer for now
 * entity inheritance system should be factored out
 * refactor to use appstates to manage game, menu, and inventory (more?)
 * add gets and sets to spatial controls to do type conversion on userdata (maybe)
+* make weapontype a savable implementing class (serializable)
 
 ## Current Bugs:
 * Jumping too slow/high
