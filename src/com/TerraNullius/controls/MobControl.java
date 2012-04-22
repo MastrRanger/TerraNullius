@@ -52,6 +52,9 @@ public abstract class MobControl extends AbstractControl {
         if(damage >= health) die();
     }
     
+    public void jump(){
+        physChar.jump();
+    }
     
     @Override
     public void setSpatial(Spatial spatial){

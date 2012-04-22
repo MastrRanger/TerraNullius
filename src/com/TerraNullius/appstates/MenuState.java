@@ -5,6 +5,7 @@
 package com.TerraNullius.appstates;
 
 import com.TerraNullius.Game;
+import com.TerraNullius.SettingsLoader;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
@@ -31,8 +32,11 @@ public class MenuState extends AbstractAppState implements ScreenController {
     private InputManager inputManager;
     private ViewPort viewPort;
     private BulletAppState bullet;
+    private SettingsLoader sl;
+    
     private Nifty nifty;
     private Screen screen;
+    
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {

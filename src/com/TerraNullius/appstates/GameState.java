@@ -5,9 +5,11 @@
 package com.TerraNullius.appstates;
 
 import com.TerraNullius.Game;
+import com.TerraNullius.SettingsLoader;
 import com.TerraNullius.controls.PlayerControl;
 import com.TerraNullius.controls.ZombieControl;
-import com.TerraNullius.entity.WeaponType;
+import com.TerraNullius.entity.Entity;
+import com.TerraNullius.entity.Mob;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
@@ -20,11 +22,22 @@ import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.InputManager;
+import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
+import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseAxisTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.post.Filter;
 import com.jme3.post.FilterPostProcessor;
@@ -54,13 +67,13 @@ public class GameState extends AbstractAppState implements ScreenController {
     private InputManager inputManager;
     private ViewPort viewPort;
     private BulletAppState bulletAppState;
-    
+    private SettingsLoader sl;
     private Nifty nifty;
     private Screen screen;
-    
     public Node mobs;
     public Spatial player;
     public CameraNode camNode;
+    private Vector2f cursorPos;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -72,9 +85,10 @@ public class GameState extends AbstractAppState implements ScreenController {
         this.inputManager = this.app.getInputManager();
         this.viewPort = this.app.getViewPort();
         this.bulletAppState = this.stateManager.getState(BulletAppState.class);
+        this.sl = new SettingsLoader();
 
         // init stuff that is independent of whether state is PAUSED or RUNNING
-        
+
         //Light
         AmbientLight al = new AmbientLight();
         al.setColor(ColorRGBA.White.mult(1.3f));
@@ -83,7 +97,7 @@ public class GameState extends AbstractAppState implements ScreenController {
         dl.setColor(ColorRGBA.White);
         dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
         rootNode.addLight(dl);
-        
+
         //Terrain
         assetManager.registerLocator("town.zip", ZipLocator.class.getName());
         Spatial sceneModel = assetManager.loadModel("main.scene");
@@ -94,7 +108,7 @@ public class GameState extends AbstractAppState implements ScreenController {
         sceneModel.addControl(landscape);
         rootNode.attachChild(sceneModel);
         bulletAppState.getPhysicsSpace().add(landscape);
-        
+
         //Player
         player = assetManager.loadModel("Models/Human/meHumanMale.mesh.xml");
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -116,13 +130,13 @@ public class GameState extends AbstractAppState implements ScreenController {
         camNode.setLocalTranslation(player.getWorldTranslation().add(new Vector3f(-14, 14, -14)));
         camNode.lookAt(player.getWorldTranslation(), Vector3f.UNIT_Y);
         rootNode.attachChild(camNode);
-        
+
         //Filters
         FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-        Filter bloom = new BloomFilter(BloomFilter.GlowMode.Objects);        
+        Filter bloom = new BloomFilter(BloomFilter.GlowMode.Objects);
         fpp.addFilter(bloom);
         viewPort.addProcessor(fpp);
-        
+
         //Mobs
         mobs = new Node("Mobs");
         rootNode.attachChild(mobs);
@@ -131,8 +145,10 @@ public class GameState extends AbstractAppState implements ScreenController {
 
         //Collectables
         createTestWeaps();
+
+        initKeys();
     }
-    
+
     //Creates new zombies of number amount a random distance less than maxDist away from the player
     public void createZombies(int amount, int maxDist) {
         maxDist *= 2;   //convert radius to diameter
@@ -157,7 +173,7 @@ public class GameState extends AbstractAppState implements ScreenController {
         Box b = new Box(Vector3f.ZERO, 0.5f, 0.25f, 0.5f);
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.setColor("Color", ColorRGBA.Pink);
-        
+
         Geometry weap = new Geometry("Weapon", b);
         Geometry weap1 = new Geometry("Weapon", b);
         Geometry weap2 = new Geometry("Weapon", b);
@@ -179,6 +195,112 @@ public class GameState extends AbstractAppState implements ScreenController {
         rootNode.attachChild(weap2);
         rootNode.attachChild(weap3);
     }
+
+    private void initKeys() {
+        //inputManager.clearMappings();
+        //Movement Controls
+        inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
+        inputManager.addMapping("Up", new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping("Down", new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addMapping("Mouse Up", new MouseAxisTrigger(MouseInput.AXIS_Y, true));
+        inputManager.addMapping("Mouse Down", new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+        inputManager.addMapping("Mouse Right", new MouseAxisTrigger(MouseInput.AXIS_X, true));
+        inputManager.addMapping("Mouse Left", new MouseAxisTrigger(MouseInput.AXIS_X, false));
+        inputManager.addMapping("Left Click", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        //HUD controls
+        inputManager.addMapping("Inv", new KeyTrigger(KeyInput.KEY_I));
+        inputManager.addMapping("Menu", new KeyTrigger(KeyInput.KEY_M));
+
+
+        inputManager.addListener(analogListener, new String[]{"Mouse Up", "Mouse Down", "Mouse Right", "Mouse Left"});
+        inputManager.addListener(actionListener, new String[]{"Left", "Right", "Up", "Down", "Mouse Up", "Jump", "Left Click", "Inv", "Menu"});
+    }
+    private boolean left = false, right = false, up = false, down = false,
+            fire = false, jump = false, invToggle = false, menuToggle = false;
+    private ActionListener actionListener = new ActionListener() {
+
+        public void onAction(String name, boolean isPressed, float tpf) {
+            if (name.equals("Left")) {
+                if (isPressed) {
+                    left = true;
+                } else {
+                    left = false;
+                }
+            } else if (name.equals("Right")) {
+                if (isPressed) {
+                    right = true;
+                } else {
+                    right = false;
+                }
+            } else if (name.equals("Up")) {
+                if (isPressed) {
+                    up = true;
+                } else {
+                    up = false;
+                }
+            } else if (name.equals("Down")) {
+                if (isPressed) {
+                    down = true;
+                } else {
+                    down = false;
+                }
+            } else if (name.equals("Jump")) {
+                if (isPressed) {
+                    jump = true;
+                } else {
+                    jump = false;
+                }
+            } else if (name.equals("Left Click")) {
+                if (isPressed) {
+                    fire = true;
+                } else {
+                    fire = false;
+                }
+            } else if (name.equals("Inv")) {
+                if (isPressed) {
+                    invToggle = true;
+                }
+            } else if (name.equals("Menu")) {
+                if (isPressed) {
+                    menuToggle = true;
+                }
+            }
+        }
+    };
+    private AnalogListener analogListener = new AnalogListener() {
+
+        public void onAnalog(String name, float value, float tpf) {
+            if (name.equals("Mouse Up") || name.equals("Mouse Down") || name.equals("Mouse Right") || name.equals("Mouse Left")) {
+                cursorPos = inputManager.getCursorPosition();
+                //Target Picking
+                CollisionResults results = new CollisionResults();
+                Vector3f cursor3d = app.getCamera().getWorldCoordinates(new Vector2f(cursorPos.x, cursorPos.y), 0f).clone();
+                Vector3f dir = app.getCamera().getWorldCoordinates(new Vector2f(cursorPos.x, cursorPos.y), 1f).subtractLocal(cursor3d).normalizeLocal();
+                Ray ray = new Ray(cursor3d, dir);
+                rootNode.collideWith(ray, results);
+                if (results.size() > 0) {
+                    CollisionResult col = results.getClosestCollision();
+                    Spatial tempGeom = col.getGeometry();
+                    System.out.println("  You selected " + tempGeom.getName() + " at " + col.getContactPoint() + ", " + col.getDistance() + " wu away.");
+
+                    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+                    mat.setColor("Color", ColorRGBA.White);
+                    mat.setColor("GlowColor", ColorRGBA.Red);
+                    tempGeom.setMaterial(mat);
+                }
+
+                //Player Rotation
+                //float angle = (float)(Math.PI + Math.PI/4 + Math.atan2((cursorPos.y - settings.getHeight()/2),(cursorPos.x - settings.getWidth()/2)));
+                //Correction for model rotation, above is normal
+                float angle = (float) (Math.PI + (3 * Math.PI) / 4 + Math.atan2((cursorPos.y - sl.windowHeight / 2), (cursorPos.x - sl.windowWidth / 2)));
+                //player.setRot((new Quaternion()).fromAngles(0, angle, 0));
+                //BUG: this method breaks for some quadrants
+                player.setUserData("ViewDirection", new Vector3f().set((float) (1 / Math.cos(angle)), 0f, (float) (1 / Math.sin(angle))));
+            }
+        }
+    };
 
     @Override
     public void cleanup() {
@@ -203,12 +325,74 @@ public class GameState extends AbstractAppState implements ScreenController {
 
     @Override
     public void update(float tpf) {
+        if (menuToggle) {
+            menuToggle = false;
+            if (nifty.getCurrentScreen() == nifty.getScreen("MenuScreen")) {
+                nifty.gotoScreen("HUDScreen");
+                setEnabled(true);
+            } else {
+                nifty.gotoScreen("MenuScreen");
+                setEnabled(false);
+            }
+        }
+        if (invToggle) {
+            invToggle = false;
+            if (nifty.getCurrentScreen() == nifty.getScreen("InventoryScreen")) {
+                nifty.gotoScreen("HUDScreen");
+                setEnabled(true);
+            } else {
+                nifty.gotoScreen("InventoryScreen");
+                setEnabled(false);
+            }
+        }
         if (isEnabled()) {
             // do the following while game is RUNNING
-//        this.app.getRootNode().getChild("blah").scale(tpf); // modify scene graph...
-//        x.setUserData(...);                                 // call some methods...
+
+            Vector3f walkDirection = new Vector3f();
+            float speed = Float.valueOf(player.getUserData("Speed").toString()) * tpf;
+            if (left) {
+                walkDirection.addLocal(speed, 0, -speed);
+            }
+            if (right) {
+                walkDirection.addLocal(-speed, 0, speed);
+            }
+            if (up) {
+                walkDirection.addLocal(speed, 0, speed);
+            }
+            if (down) {
+                walkDirection.addLocal(-speed, 0, -speed);
+            }
+            player.setUserData("WalkDirection", walkDirection);
+            
+            if (jump) {
+                player.getControl(PlayerControl.class).jump();
+            }
+
+            if (fire && !Boolean.valueOf(player.getUserData("Firing").toString())) {
+                player.getControl(PlayerControl.class).toggleFire();
+            } else if (!fire && player.isFiring()) {
+                player.fireOff();
+            }
+
+            player.update();
+            camNode.setLocalTranslation(player.getPos().add(new Vector3f(-14, 14, -14)));
+            for (Mob m : mobList) {
+                m.update(tpf);
+            }
+            for (Entity e : entityList) {
+                e.update();
+            }
+            if ((System.currentTimeMillis() - shootTimer > player.getWeap().fireRate * 1000) && player.isFiring()) {
+                player.shoot();
+                shootTimer = System.currentTimeMillis();
+            }
+
         } else {
-            // do the following while game is PAUSED, e.g. play an idle animation.    
+            // do the following while game is PAUSED, e.g. play an idle animation.   
+            player.setWalkDirection(Vector3f.ZERO);
+            for (Mob m : mobList) {
+                m.setWalkDirection(Vector3f.ZERO);
+            }
         }
     }
 
