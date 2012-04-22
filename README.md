@@ -34,6 +34,7 @@ just singleplayer for now
 * refactor to store entity data in spatial's userdata and use custom controls to control spatials
 * entity inheritance system should be factored out
 * refactor to use appstates to manage game, menu, and inventory (more?)
+* add gets and sets to spatial controls to do type conversion on userdata (maybe)
 
 ## Current Bugs:
 * Jumping too slow/high
