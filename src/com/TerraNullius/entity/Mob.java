@@ -4,7 +4,6 @@
  */
 package com.TerraNullius.entity;
 
-import com.TerraNullius.entity.Weapon.WeaponType;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
@@ -65,12 +64,6 @@ public class Mob extends Entity{
     public void setWalkDirection(Vector3f vec){
         walkDirection.set(vec);
         physChar.setWalkDirection(walkDirection.normalize().mult(speed));
-    }
-
-    public void give(Entity e) {
-        if (e instanceof Weapon) {
-            weap = ((Weapon) e).weapType;
-        }
     }
     
     @Override

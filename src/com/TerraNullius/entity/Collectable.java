@@ -5,7 +5,6 @@
 package com.TerraNullius.entity;
 
 import com.jme3.collision.CollisionResults;
-import com.jme3.math.Vector3f;
 
 /**
  *
@@ -25,7 +24,7 @@ public class Collectable extends Entity{
             CollisionResults results = new CollisionResults();
             spatial.collideWith(game.player.spatial.getWorldBound(), results);
             if(results.size() > 0){
-                game.player.give(this);
+                //game.player.give(this);
                 die();
             }
         }
