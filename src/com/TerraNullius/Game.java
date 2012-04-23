@@ -1,6 +1,9 @@
 package com.TerraNullius;
 
 import com.TerraNullius.GUI.StartScreen;
+import com.TerraNullius.appstates.GameState;
+import com.TerraNullius.appstates.InventoryState;
+import com.TerraNullius.appstates.MenuState;
 import com.TerraNullius.entity.*;
 import com.TerraNullius.entity.Weapon.WeaponType;
 import com.TerraNullius.physics.TNPhysicsListener;
@@ -40,13 +43,20 @@ public class Game extends SimpleApplication {
     static Game instance;
     public static AppSettings settings;
     public EntityIDMapper idMap;
-    public BulletAppState bulletAppState;
+    
     public Vector2f cursorPos;
     public long shootTimer;
     public CameraNode camNode;
     public Node playerNode;
     public Node mobs;
     boolean isRunning = false;
+    
+    //AppStates
+    public BulletAppState bulletAppState;
+    public GameState gameState;
+    public MenuState menuState;
+    public InventoryState inventoryState;
+    
     //Entities
     public Player player;
     public ArrayList<Mob> mobList = new ArrayList();
@@ -77,22 +87,30 @@ public class Game extends SimpleApplication {
         Logger.getLogger("").setLevel(Level.SEVERE);
         idMap = new EntityIDMapper();
 
-        //Physics
+        //AppStates
         bulletAppState = new BulletAppState();
+        gameState = new GameState();
+        menuState = new MenuState();
+        inventoryState = new InventoryState();
         stateManager.attach(bulletAppState);
+        stateManager.attach(gameState);
+        stateManager.attach(menuState);
+        stateManager.attach(inventoryState);
+        
+        //Physics
         bulletAppState.getPhysicsSpace().setGravity(new Vector3f(0f, -1f, 0f));
         bulletAppState.getPhysicsSpace().setAccuracy(0.005f);
         TNPhysicsListener pListener = new TNPhysicsListener(bulletAppState);
 
         //Light
-        AmbientLight al = new AmbientLight();
-        al.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(al);
-
-        DirectionalLight dl = new DirectionalLight();
-        dl.setColor(ColorRGBA.White);
-        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-        rootNode.addLight(dl);
+//        AmbientLight al = new AmbientLight();
+//        al.setColor(ColorRGBA.White.mult(1.3f));
+//        rootNode.addLight(al);
+//
+//        DirectionalLight dl = new DirectionalLight();
+//        dl.setColor(ColorRGBA.White);
+//        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+//        rootNode.addLight(dl);
         
 //        //Ground
 //        Box b = new Box(Vector3f.ZERO, 128f, 1f, 128f);
@@ -112,15 +130,15 @@ public class Game extends SimpleApplication {
 //        bulletAppState.getPhysicsSpace().add(groundPhys);
 //        rootNode.attachChild(ground);
 
-        assetManager.registerLocator("town.zip", ZipLocator.class.getName());
-        Spatial sceneModel = assetManager.loadModel("main.scene");
-        sceneModel.setLocalTranslation(0, -1f, 0);
-        sceneModel.setLocalScale(1f);
-        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape((Node) sceneModel);
-        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
-        sceneModel.addControl(landscape);
-        rootNode.attachChild(sceneModel);
-        bulletAppState.getPhysicsSpace().add(landscape);
+//        assetManager.registerLocator("town.zip", ZipLocator.class.getName());
+//        Spatial sceneModel = assetManager.loadModel("main.scene");
+//        sceneModel.setLocalTranslation(0, -1f, 0);
+//        sceneModel.setLocalScale(1f);
+//        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape((Node) sceneModel);
+//        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
+//        sceneModel.addControl(landscape);
+//        rootNode.attachChild(sceneModel);
+//        bulletAppState.getPhysicsSpace().add(landscape);
 
         //Player
         player = new Player(instance);

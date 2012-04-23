@@ -27,7 +27,7 @@ public class MenuState extends AbstractAppState {
     private AppStateManager stateManager;
     private InputManager inputManager;
     private ViewPort viewPort;
-    private BulletAppState bullet;
+    private BulletAppState bulletAppState;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -38,7 +38,7 @@ public class MenuState extends AbstractAppState {
         this.stateManager = this.app.getStateManager();
         this.inputManager = this.app.getInputManager();
         this.viewPort = this.app.getViewPort();
-        this.bullet = this.stateManager.getState(BulletAppState.class);
+        this.bulletAppState = this.stateManager.getState(BulletAppState.class);
 
         // init stuff that is independent of whether state is PAUSED or RUNNING
 //      this.app.getRootNode().attachChild(getX()); // modify scene graph...

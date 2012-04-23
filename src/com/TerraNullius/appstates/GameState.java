@@ -10,10 +10,19 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
 import com.jme3.app.state.AppStateManager;
 import com.jme3.asset.AssetManager;
+import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
+import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.InputManager;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.math.ColorRGBA;
+import com.jme3.math.Vector3f;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 
 /**
  *
@@ -27,7 +36,7 @@ public class GameState extends AbstractAppState{
     private AppStateManager stateManager;
     private InputManager inputManager;
     private ViewPort viewPort;
-    private BulletAppState bullet;
+    private BulletAppState bulletAppState;
 
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -38,11 +47,27 @@ public class GameState extends AbstractAppState{
         this.stateManager = this.app.getStateManager();
         this.inputManager = this.app.getInputManager();
         this.viewPort = this.app.getViewPort();
-        this.bullet = this.stateManager.getState(BulletAppState.class);
+        this.bulletAppState = this.stateManager.getState(BulletAppState.class);
 
         // init stuff that is independent of whether state is PAUSED or RUNNING
-//      this.app.getRootNode().attachChild(getX()); // modify scene graph...
-//      this.app.doSomething();                     // call custom methods...
+        AmbientLight al = new AmbientLight();
+        al.setColor(ColorRGBA.White.mult(1.3f));
+        rootNode.addLight(al);
+
+        DirectionalLight dl = new DirectionalLight();
+        dl.setColor(ColorRGBA.White);
+        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+        rootNode.addLight(dl);
+        
+        assetManager.registerLocator("town.zip", ZipLocator.class.getName());
+        Spatial sceneModel = assetManager.loadModel("main.scene");
+        sceneModel.setLocalTranslation(0, -1f, 0);
+        sceneModel.setLocalScale(1f);
+        CollisionShape sceneShape = CollisionShapeFactory.createMeshShape((Node) sceneModel);
+        RigidBodyControl landscape = new RigidBodyControl(sceneShape, 0);
+        sceneModel.addControl(landscape);
+        rootNode.attachChild(sceneModel);
+        bulletAppState.getPhysicsSpace().add(landscape);
     }
 
     @Override
