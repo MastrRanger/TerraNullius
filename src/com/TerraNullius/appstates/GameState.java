@@ -371,29 +371,17 @@ public class GameState extends AbstractAppState implements ScreenController {
             }
 
             if (fire && !Boolean.valueOf(player.getUserData("Firing").toString())) {
-                player.getControl(PlayerControl.class).toggleFire();
-            } else if (!fire && player.isFiring()) {
-                player.fireOff();
+                player.getControl(PlayerControl.class).toggleFire(true);
+            } else if (!fire && Boolean.valueOf(player.getUserData("Firing").toString())) {
+                player.getControl(PlayerControl.class).toggleFire(false);
             }
 
-            player.update();
-            camNode.setLocalTranslation(player.getPos().add(new Vector3f(-14, 14, -14)));
-            for (Mob m : mobList) {
-                m.update(tpf);
-            }
-            for (Entity e : entityList) {
-                e.update();
-            }
-            if ((System.currentTimeMillis() - shootTimer > player.getWeap().fireRate * 1000) && player.isFiring()) {
-                player.shoot();
-                shootTimer = System.currentTimeMillis();
-            }
+            camNode.setLocalTranslation(player.getWorldTranslation().add(new Vector3f(-14, 14, -14)));
 
         } else {
-            // do the following while game is PAUSED, e.g. play an idle animation.   
-            player.setWalkDirection(Vector3f.ZERO);
-            for (Mob m : mobList) {
-                m.setWalkDirection(Vector3f.ZERO);
+            // do the following while game is PAUSED, e.g. play an idle animation.
+            for (Spatial s : rootNode.descendantMatches(Spatial.class)){
+                s.setUserData("WalkDirection", Vector3f.ZERO);
             }
         }
     }

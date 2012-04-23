@@ -27,7 +27,6 @@ public class Game extends SimpleApplication {
     public EntityIDMapper idMap;
     
     public Vector2f cursorPos;
-    public long shootTimer;
     public CameraNode camNode;
     public Node playerNode;
     public Node mobs;

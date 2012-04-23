@@ -15,15 +15,23 @@ public class PlayerControl extends MobControl {
     public void setSpatial(Spatial spatial){
         super.setSpatial(spatial);
         spatial.setName("Player");
-        spatial.setUserData("Weapon", "Pistol");
+        
+        spatial.setUserData("Weapon", WeaponType.PISTOL);
+        spatial.setUserData("Speed", 1f);
+        spatial.setUserData("Health", 100);
+        spatial.setUserData("Damage", 0);
+        spatial.setUserData("Strength", 1f);
+        
         spatial.scale(1.5f, 1.5f, 1.5f);
         spatial.setLocalTranslation(new Vector3f());
     }
 
+    @Override
     public Control cloneForSpatial(Spatial spatial) {
         MobControl control = new PlayerControl();
         control.setSpatial(spatial);
         control.setEnabled(isEnabled()); 
         return control;
     }
+    
 }
