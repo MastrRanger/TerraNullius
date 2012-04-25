@@ -15,7 +15,8 @@ public class PlayerControl extends MobControl {
     public void setSpatial(Spatial spatial){
         super.setSpatial(spatial);
         spatial.setName("Player");
-        
+        spatial.setUserData("Alive", true);
+        spatial.setUserData("Firing", false);
         spatial.setUserData("Weapon", WeaponType.PISTOL);
         spatial.setUserData("Speed", 1f);
         spatial.setUserData("Health", 100);

@@ -10,6 +10,7 @@ import com.TerraNullius.controls.PlayerControl;
 import com.TerraNullius.controls.ZombieControl;
 import com.TerraNullius.entity.Entity;
 import com.TerraNullius.entity.Mob;
+import com.TerraNullius.entity.WeaponType;
 import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.app.state.AbstractAppState;
@@ -60,14 +61,13 @@ import java.util.Random;
  */
 public class GameState extends AbstractAppState implements ScreenController {
 
-    private SimpleApplication app;
+    private Game app;
     private Node rootNode;
     private AssetManager assetManager;
     private AppStateManager stateManager;
     private InputManager inputManager;
     private ViewPort viewPort;
     private BulletAppState bulletAppState;
-
     private SettingsLoader sl;
     private Nifty nifty;
     private Screen screen;
@@ -86,6 +86,7 @@ public class GameState extends AbstractAppState implements ScreenController {
         this.inputManager = this.app.getInputManager();
         this.viewPort = this.app.getViewPort();
         this.bulletAppState = this.stateManager.getState(BulletAppState.class);
+        this.nifty = this.app.nifty;
 
         // init stuff that is independent of whether state is PAUSED or RUNNING
 
@@ -116,7 +117,6 @@ public class GameState extends AbstractAppState implements ScreenController {
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.setColor("Color", ColorRGBA.White);
         player.setMaterial(mat);
-        player.addControl(new PlayerControl());
         CharacterControl physChar = new CharacterControl(new CapsuleCollisionShape(.2f, 0.75f, 1), 0.1f);
         physChar.setJumpSpeed(10);
         physChar.setFallSpeed(20);
@@ -124,6 +124,7 @@ public class GameState extends AbstractAppState implements ScreenController {
         physChar.setUseViewDirection(true);
         player.addControl(physChar);
         bulletAppState.getPhysicsSpace().add(physChar);
+        player.addControl(new PlayerControl());
         rootNode.attachChild(player);
 
         //Camera      
@@ -162,10 +163,17 @@ public class GameState extends AbstractAppState implements ScreenController {
             Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
             mat.setColor("Color", ColorRGBA.Black);
             zombie.setMaterial(mat);
+            CharacterControl physChar = new CharacterControl(new CapsuleCollisionShape(.2f, 0.75f, 1), 0.1f);
+            physChar.setJumpSpeed(10);
+            physChar.setFallSpeed(20);
+            physChar.setGravity(30);
+            physChar.setUseViewDirection(true);
+            zombie.addControl(physChar);
+            bulletAppState.getPhysicsSpace().add(physChar);
             zombie.addControl(new ZombieControl());
 
             offset = new Vector3f(rand.nextInt(maxDist) - maxDist / 2, 0, rand.nextInt(maxDist) - maxDist / 2);
-            zombie.setLocalTranslation(player.getWorldTranslation().add(offset));
+            physChar.warp(player.getWorldTranslation().add(offset));
 
             mobs.attachChild(zombie);
         }
@@ -184,10 +192,10 @@ public class GameState extends AbstractAppState implements ScreenController {
         weap1.setMaterial(mat);
         weap2.setMaterial(mat);
         weap3.setMaterial(mat);
-        weap.setUserData("Weapon", "Hands");
-        weap1.setUserData("Weapon", "Pistol");
-        weap2.setUserData("Weapon", "Machinegun");
-        weap3.setUserData("Weapon", "Rifle");
+        weap.setUserData("Weapon", WeaponType.HANDS);
+        weap1.setUserData("Weapon", WeaponType.PISTOL);
+        weap2.setUserData("Weapon", WeaponType.MACHINEGUN);
+        weap3.setUserData("Weapon", WeaponType.RIFLE);
         weap.setLocalTranslation(player.getWorldTranslation().add(new Vector3f(5f, 0f, 5f)));
         weap1.setLocalTranslation(player.getWorldTranslation().add(new Vector3f(-5f, 0f, 5f)));
         weap2.setLocalTranslation(player.getWorldTranslation().add(new Vector3f(-5f, 0f, -5f)));
@@ -281,15 +289,15 @@ public class GameState extends AbstractAppState implements ScreenController {
                 Vector3f cursor3d = app.getCamera().getWorldCoordinates(new Vector2f(cursorPos.x, cursorPos.y), 0f).clone();
                 Vector3f dir = app.getCamera().getWorldCoordinates(new Vector2f(cursorPos.x, cursorPos.y), 1f).subtractLocal(cursor3d).normalizeLocal();
                 Ray ray = new Ray(cursor3d, dir);
-                rootNode.collideWith(ray, results);
+                mobs.collideWith(ray, results);
                 if (results.size() > 0) {
                     CollisionResult col = results.getClosestCollision();
                     Spatial tempGeom = col.getGeometry();
                     System.out.println("  You selected " + tempGeom.getName() + " at " + col.getContactPoint() + ", " + col.getDistance() + " wu away.");
-
+                    System.out.println(tempGeom.getUserDataKeys());
                     Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-                    mat.setColor("Color", ColorRGBA.White);
-                    mat.setColor("GlowColor", ColorRGBA.Red);
+                    mat.setColor("Color", ColorRGBA.Green);
+                    //mat.setColor("GlowColor", ColorRGBA.Red);
                     tempGeom.setMaterial(mat);
                 }
 
@@ -365,14 +373,14 @@ public class GameState extends AbstractAppState implements ScreenController {
                 walkDirection.addLocal(-speed, 0, -speed);
             }
             player.setUserData("WalkDirection", walkDirection);
-            
+
             if (jump) {
                 player.getControl(PlayerControl.class).jump();
             }
 
-            if (fire && !Boolean.valueOf(player.getUserData("Firing").toString())) {
+            if (fire && !player.getControl(PlayerControl.class).isFiring()) {
                 player.getControl(PlayerControl.class).toggleFire(true);
-            } else if (!fire && Boolean.valueOf(player.getUserData("Firing").toString())) {
+            } else if (!fire && player.getControl(PlayerControl.class).isFiring()) {
                 player.getControl(PlayerControl.class).toggleFire(false);
             }
 
@@ -380,7 +388,7 @@ public class GameState extends AbstractAppState implements ScreenController {
 
         } else {
             // do the following while game is PAUSED, e.g. play an idle animation.
-            for (Spatial s : rootNode.descendantMatches(Spatial.class)){
+            for (Spatial s : rootNode.descendantMatches(Spatial.class)) {
                 s.setUserData("WalkDirection", Vector3f.ZERO);
             }
         }

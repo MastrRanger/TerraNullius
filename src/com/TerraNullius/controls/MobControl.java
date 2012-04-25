@@ -15,53 +15,54 @@ import com.jme3.scene.control.Control;
  * @author Griffin
  */
 public abstract class MobControl extends AbstractControl {
-    
+
     CharacterControl physChar;
-    
     boolean firing = false;
     long shootTimer = 0;
-    
-    public int getHealth(){
-        return (Integer)spatial.getUserData("Health");
+
+    public int getHealth() {
+        return (Integer) spatial.getUserData("Health");
     }
-    
-    public int getDamage(){
-        return (Integer)spatial.getUserData("Damage");
+
+    public int getDamage() {
+        return (Integer) spatial.getUserData("Damage");
     }
-    
-    public float getSpeed(){
-        return (Float)spatial.getUserData("Speed");
+
+    public float getSpeed() {
+        return (Float) spatial.getUserData("Speed");
     }
-    
-    public float getStrength(){
-        return (Float)spatial.getUserData("Strength");
+
+    public float getStrength() {
+        return (Float) spatial.getUserData("Strength");
     }
-    
-    public WeaponType getWeapon(){
-        return (WeaponType)spatial.getUserData("Weapon");
+
+    public WeaponType getWeapon() {
+        return (WeaponType) spatial.getUserData("Weapon");
     }
-    
-    public boolean isAlive(){
-        return (Boolean)spatial.getUserData("Alive");
+
+    public boolean isAlive() {
+        return (Boolean) spatial.getUserData("Alive");
     }
-    
-    public int getCurrentHealth(){
+
+    public int getCurrentHealth() {
         return getHealth() - getDamage();
     }
+
+    public boolean isFiring() {
+        return (Boolean) spatial.getUserData("Firing");
+    }
+
     //using slight auto-aim correction
     public void shoot(Vector3f targetPos) {
 //        CollisionResults results = new CollisionResults();
 //        Vector3f targetPos = target.getWorldTranslation();
 //        Vector3f playerPos = spatial.getWorldTranslation().add(new Vector3f(0, 1, 0));
-
         //increment ammo
-        
         //get rotation
         //ray trace to target
         //detect hit
         //draw line to target
         //notify target if its hit
-
 //        CollisionResults results = new CollisionResults();
 //
 //        Vector2f mousePosNoOff = new Vector2f();
@@ -73,9 +74,7 @@ public abstract class MobControl extends AbstractControl {
 //        Vector2f mousePos = new Vector2f(polarMag * FastMath.cos(polarAngle), polarMag * FastMath.sin(polarAngle));
 //        Vector3f playerPos = this.getWorldPos().add(new Vector3f(0, 1, 0));
 //        Vector3f rayCoords = new Vector3f(((mousePos.y * 300)), 1f, ((mousePos.x * 300)));
-
 //        Ray ray = new Ray(playerPos, rayCoords);
-
 //        //Temp line
 //        Mesh lineMesh = new Mesh();
 //        lineMesh.setMode(Mesh.Mode.Lines);
@@ -92,7 +91,6 @@ public abstract class MobControl extends AbstractControl {
 //        lineMesh.updateBound();
 //        lineMesh.updateCounts();
 //        game.line.setMesh(lineMesh);
-
 //        game.mobs.collideWith(ray, results);
 //
 //        Bullet bul = new Bullet(game, playerPos, rayCoords);
@@ -107,48 +105,59 @@ public abstract class MobControl extends AbstractControl {
 //                if(e != null) e.hurt(this);
 //            }
 //        }
-    
     }
-    
+
     public void shoot() {
         shoot(physChar.getViewDirection());
     }
-    
-    public void toggleFire(boolean fire){
+
+    public void toggleFire(boolean fire) {
         this.firing = fire;
     }
-    
+
     public void die() {
         spatial.removeFromParent();
         spatial.setUserData("Alive", false);
     }
-    
-    public void hurt(Spatial s){
+
+    public void hurt(Spatial s) {
         spatial.setUserData("Damage", getDamage() + (getStrength() * getWeapon().fireDamage));
         //knock the character down
         spatial.setUserData("Color", ColorRGBA.Red);
-        
-        if(getCurrentHealth() <= 0){ 
+
+        if (getCurrentHealth() <= 0) {
             die();
         }
     }
-    
-    public void jump(){
+
+    public void jump() {
         physChar.jump();
     }
-    
+
     @Override
-    public void setSpatial(Spatial spatial){
+    public void setSpatial(Spatial spatial) {
+        super.setSpatial(spatial);
         physChar = spatial.getControl(CharacterControl.class);
+        
+        spatial.setUserData("WalkDirection", new Vector3f());
+        spatial.setUserData("ViewDirection", new Vector3f());
         spatial.setUserData("Alive", true);
+        spatial.setUserData("Firing", false);
+        spatial.setUserData("Weapon", WeaponType.PISTOL);
+        spatial.setUserData("Speed", 1f);
+        spatial.setUserData("Health", 100);
+        spatial.setUserData("Damage", 0);
+        spatial.setUserData("Strength", 1f);
+
     }
 
     @Override
     protected void controlUpdate(float tpf) {
         if (isAlive()) {
-            physChar.setWalkDirection(((Vector3f)spatial.getUserData("WalkDirection")));//.normalize().mult(spatial.getUserData("Speed"))
-            physChar.setViewDirection(((Vector3f)spatial.getUserData("ViewDirection")));
-                            
+            if (physChar != null) {
+                physChar.setWalkDirection(((Vector3f) spatial.getUserData("WalkDirection")));//.normalize().mult(spatial.getUserData("Speed"))
+                physChar.setViewDirection(((Vector3f) spatial.getUserData("ViewDirection")));
+            }
             if ((System.currentTimeMillis() - shootTimer > getWeapon().fireRate * 1000) && firing) {
                 shoot();
                 shootTimer = System.currentTimeMillis();
@@ -159,10 +168,7 @@ public abstract class MobControl extends AbstractControl {
 
     @Override
     protected void controlRender(RenderManager rm, ViewPort vp) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        
     }
 
-    public Control cloneForSpatial(Spatial spatial) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
 }

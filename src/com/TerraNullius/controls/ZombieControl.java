@@ -15,7 +15,13 @@ public class ZombieControl extends MobControl {
     public void setSpatial(Spatial spatial){
         super.setSpatial(spatial);
         spatial.setName("Player");
-        spatial.setUserData("Weapon", "Hands");
+        spatial.setUserData("Alive", true);
+        spatial.setUserData("Firing", false);
+        spatial.setUserData("Weapon", WeaponType.HANDS);
+        spatial.setUserData("Speed", 1f);
+        spatial.setUserData("Health", 100);
+        spatial.setUserData("Damage", 0);
+        spatial.setUserData("Strength", 1f);
         spatial.scale(1.5f, 1.5f, 1.5f);
         spatial.setLocalTranslation(new Vector3f());
     }
