@@ -330,6 +330,9 @@ public class GameState extends AbstractAppState implements ScreenController {
 //        this.app.doSomethingElse();                 // call custom methods...
         } else {
             // take away everything not needed while this state is PAUSED
+            for (Spatial s : rootNode.descendantMatches(Spatial.class)) {
+                s.setUserData("WalkDirection", Vector3f.ZERO);
+            }
         }
     }
 
@@ -359,7 +362,7 @@ public class GameState extends AbstractAppState implements ScreenController {
             // do the following while game is RUNNING
 
             Vector3f walkDirection = new Vector3f();
-            float speed = Float.valueOf(player.getUserData("Speed").toString()) * tpf;
+            float speed = player.getControl(PlayerControl.class).getSpeed() * tpf;
             if (left) {
                 walkDirection.addLocal(speed, 0, -speed);
             }
@@ -388,9 +391,7 @@ public class GameState extends AbstractAppState implements ScreenController {
 
         } else {
             // do the following while game is PAUSED, e.g. play an idle animation.
-            for (Spatial s : rootNode.descendantMatches(Spatial.class)) {
-                s.setUserData("WalkDirection", Vector3f.ZERO);
-            }
+
         }
     }
 
